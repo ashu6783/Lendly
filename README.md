@@ -13,16 +13,154 @@ role-guarded operations dashboard.
 
 ## Table of contents
 
-1. [Project structure](#project-structure)
-2. [Prerequisites](#prerequisites)
-3. [Setup & running](#setup--running)
-4. [Login credentials](#login-credentials)
-5. [Data model](#data-model)
-6. [Loan lifecycle](#loan-lifecycle)
-7. [REST API](#rest-api)
-8. [Role-based access control](#role-based-access-control)
-9. [Design decisions](#design-decisions)
-10. [Demo / test checklist](#demo--test-checklist)
+1. [Architecture](#architecture)
+2. [Project structure](#project-structure)
+3. [Prerequisites](#prerequisites)
+4. [Setup & running](#setup--running)
+5. [Login credentials](#login-credentials)
+6. [Data model](#data-model)
+7. [Loan lifecycle](#loan-lifecycle)
+8. [REST API](#rest-api)
+9. [Role-based access control](#role-based-access-control)
+10. [Design decisions](#design-decisions)
+11. [Deploy on Render](#deploy-on-render)
+
+---
+
+## Architecture
+
+Lendly is a **monorepo** with a browser client, a REST API, and MongoDB. The frontend
+never talks to the database directly — all business rules and persistence go through the
+API.
+
+### System overview
+
+```mermaid
+flowchart TB
+  subgraph client["Browser"]
+    UI["Next.js 14 App Router"]
+    AuthCtx["AuthContext + localStorage JWT"]
+    ApiLib["lib/api.ts fetch client"]
+    UI --> AuthCtx
+    UI --> ApiLib
+  end
+
+  subgraph api["Backend — Express"]
+    Routes["Routes /api/*"]
+    MW["Middleware: CORS · JWT · RBAC · multer · errors"]
+    Ctrl["Controllers"]
+    Svc["Services: BRE · loan math"]
+    Models["Mongoose models"]
+    Uploads["uploads/ salary slips"]
+    Routes --> MW --> Ctrl --> Svc
+    Ctrl --> Models
+    Ctrl --> Uploads
+  end
+
+  subgraph data["Data"]
+    Mongo[(MongoDB)]
+  end
+
+  ApiLib -->|"HTTPS/HTTP + Bearer token"| Routes
+  Models --> Mongo
+```
+
+| Layer | Technology | Responsibility |
+| ----- | ---------- | -------------- |
+| **UI** | Next.js, React, Tailwind | Pages, forms, role-guarded dashboard, multi-step apply flow |
+| **API** | Express, TypeScript | Auth, RBAC, loan lifecycle, file upload/stream, validation |
+| **Data** | MongoDB, Mongoose | `users`, `loans`, `payments` collections |
+| **Auth** | JWT + bcrypt | Stateless sessions; password hashed on save |
+
+### Local development
+
+```mermaid
+flowchart LR
+  Dev["Developer"] --> Web["localhost:3000\nNext.js dev"]
+  Web --> API["localhost:5000\nExpress + nodemon"]
+  API --> DB["MongoDB\nlocal or Atlas"]
+  API --> Disk["backend/uploads/"]
+```
+
+| Service | URL | Config |
+| ------- | --- | ------ |
+| Frontend | `http://localhost:3000` | `NEXT_PUBLIC_API_URL` → API |
+| Backend | `http://localhost:5000` | `MONGODB_URI`, `JWT_SECRET`, `CLIENT_URL` → frontend (CORS) |
+
+### Production (Render + Docker)
+
+Deploy via the root [`render.yaml`](render.yaml) Blueprint — two Docker web services and
+external MongoDB (e.g. Atlas). See [DEPLOY_RENDER.md](DEPLOY_RENDER.md) for steps.
+
+```mermaid
+flowchart LR
+  User["Users"] --> WebSvc["lms-web\nNext.js standalone"]
+  WebSvc -->|"NEXT_PUBLIC_API_URL"| ApiSvc["lms-api\nExpress"]
+  ApiSvc --> Atlas[(MongoDB Atlas)]
+  ApiSvc -->|"CLIENT_URL CORS"| WebSvc
+```
+
+| Render service | Image | Notes |
+| -------------- | ----- | ----- |
+| `lms-web` | `frontend/Dockerfile` | `output: 'standalone'`; API URL baked in at **build** time |
+| `lms-api` | `backend/Dockerfile` | Listens on `0.0.0.0` + `PORT`; seeds test users on deploy |
+
+### Request & auth flow
+
+```mermaid
+sequenceDiagram
+  participant B as Browser
+  participant F as Next.js
+  participant A as Express API
+  participant M as MongoDB
+
+  B->>F: POST /login
+  F->>A: POST /api/auth/login
+  A->>M: find user + bcrypt compare
+  M-->>A: user document
+  A-->>F: JWT + user profile
+  F->>B: store token in localStorage
+
+  B->>F: dashboard / apply action
+  F->>A: API call + Authorization Bearer
+  A->>A: authenticate → authorize(role)
+  A->>M: read / write
+  M-->>A: result
+  A-->>F: JSON response
+  F-->>B: render UI
+```
+
+1. **Login / signup** — API returns a JWT; the client stores it and sends
+   `Authorization: Bearer <token>` on protected routes.
+2. **Route guards** — `ProtectedRoute` and the sidebar limit what each role sees in the UI.
+3. **Server enforcement** — every sensitive handler uses `authenticate` + `authorize(...)`;
+   the UI alone cannot grant access.
+
+### Backend layering
+
+```
+HTTP request
+    → routes/*.ts          (path + method, mount prefixes)
+    → middleware/          (auth, RBAC, multer, error wrapper)
+    → controllers/*.ts     (parse input, call services/models, respond)
+    → services/*.ts        (BRE, interest math — pure business logic)
+    → models/*.ts          (Mongoose schemas, hooks, indexes)
+    → MongoDB
+```
+
+### Role → module map
+
+After login, users are routed by **role** (staff to dashboard modules, borrowers to
+`/apply`):
+
+| Role | Primary UI | API prefix |
+| ---- | ---------- | ---------- |
+| Borrower | `/apply`, loan status | `/api/loans` |
+| Sales | `/dashboard/sales` | `/api/sales` |
+| Sanction | `/dashboard/sanction` | `/api/sanction` |
+| Disbursement | `/dashboard/disbursement` | `/api/disbursement` |
+| Collection | `/dashboard/collection` | `/api/collection` |
+| Admin | All dashboard modules | All of the above |
 
 ---
 
@@ -313,20 +451,18 @@ primitives and a thin typed API client.
 
 ---
 
-## Demo / test checklist
+## Deploy on Render
 
-A 3–5 minute walkthrough covers:
+Dockerfiles live in `backend/` and `frontend/`; orchestration is in [`render.yaml`](render.yaml).
 
-1. **Borrower — BRE fail:** sign up, enter an ineligible profile (e.g. age < 23, salary
-   < ₹25,000, bad PAN, or Unemployed) → blocked with clear reasons.
-2. **Borrower — BRE pass → apply:** valid details → upload a salary slip → move the
-   sliders (watch live repayment) → **Apply**. Status becomes APPLIED.
-3. **Sanction:** log in as `sanction@lms.test`, open the application, view the slip,
-   **Approve** (or reject with a reason).
-4. **Disbursement:** log in as `disbursement@lms.test`, **Mark as disbursed**.
-5. **Collection:** log in as `collection@lms.test`, record payments by UTR. Try a
-   duplicate UTR (rejected) and an over-payment (rejected). Pay the balance in full →
-   the loan **auto-closes**.
-6. **RBAC:** confirm each executive sees only their module, Admin sees all, and a
-   borrower cannot reach the dashboard.
+```bash
+# Quick reference — full guide in DEPLOY_RENDER.md
+# 1. Push repo to GitHub
+# 2. Render → New → Blueprint → set MONGODB_URI when prompted
+# 3. Open lms-web URL; sign in with seeded test accounts
 ```
+
+See **[DEPLOY_RENDER.md](DEPLOY_RENDER.md)** for Atlas networking, env vars, seeding, and
+upload storage notes.
+
+---
