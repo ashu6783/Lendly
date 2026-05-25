@@ -97,13 +97,13 @@ flowchart LR
   User["Users"] --> WebSvc["lms-web\nNext.js standalone"]
   WebSvc -->|"NEXT_PUBLIC_API_URL"| ApiSvc["lms-api\nExpress"]
   ApiSvc --> Atlas[(MongoDB Atlas)]
-  ApiSvc -->|"CLIENT_URL CORS"| WebSvc
+  ApiSvc -->|"CLIENT_URL CORS (manual env)"| WebSvc
 ```
 
 | Render service | Image | Notes |
 | -------------- | ----- | ----- |
 | `lms-web` | `frontend/Dockerfile` | `output: 'standalone'`; API URL baked in at **build** time |
-| `lms-api` | `backend/Dockerfile` | Listens on `0.0.0.0` + `PORT`; seed test users manually via Shell |
+| `lms-api` | `backend/Dockerfile` | `CLIENT_URL` + `MONGODB_URI` set in dashboard; seed via Shell |
 
 ### Request & auth flow
 

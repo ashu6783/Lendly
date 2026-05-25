@@ -23,11 +23,9 @@ services:
         generateValue: true
       - key: JWT_EXPIRES_IN
         value: 7d
+      # Set in Render Dashboard after lms-web deploys (avoids circular blueprint dependency)
       - key: CLIENT_URL
-        fromService:
-          type: web
-          name: lms-web
-          envVarKey: RENDER_EXTERNAL_URL
+        sync: false
       - key: MAX_FILE_SIZE_MB
         value: 5
 

@@ -26,20 +26,23 @@ mongodb+srv://USER:PASSWORD@cluster0.xxxxx.mongodb.net/lms?retryWrites=true&w=ma
 1. Open [Render Dashboard](https://dashboard.render.com/) → **New** → **Blueprint**
 2. Connect your repository
 3. Confirm `render.yaml` at the repo root
-4. When prompted, set **`MONGODB_URI`** (marked `sync: false` in the blueprint)
+4. When prompted, set **`MONGODB_URI`** and **`CLIENT_URL`** (both marked `sync: false`)
 5. Click **Apply** and wait for both services to build and deploy
+6. After **`lms-web`** is live, set **`CLIENT_URL`** on **`lms-api`** to the frontend URL (e.g. `https://lms-web-xxxx.onrender.com`) and **Manual Deploy** the API
 
 Render will:
 
 - Build each service from its `Dockerfile`
 - Set `NEXT_PUBLIC_API_URL` on the frontend from the API’s public URL
-- Set `CLIENT_URL` on the API from the frontend’s public URL (CORS)
 - Generate `JWT_SECRET` automatically
+
+> **Why `preDeployCommand` was removed:** running `node dist/seed.js` before each deploy often fails the release (DB connectivity, timing, or empty env). Seed manually once via Shell instead (see below).
 
 ## After deploy
 
-1. Open the **`lms-web`** URL (e.g. `https://lms-web-xxxx.onrender.com`)
-2. Sign in with seeded accounts (password `Password123`):
+1. Open the **`lms-api`** service → **Shell** → run once: `node dist/seed.js`
+2. Open the **`lms-web`** URL (e.g. `https://lms-web-xxxx.onrender.com`)
+3. Sign in with seeded accounts (password `Password123`):
    - `borrower@lms.test`, `admin@lms.test`, etc.
 
 If login fails, open the **`lms-api`** service → **Shell** and run:
@@ -50,7 +53,7 @@ node dist/seed.js
 
 ## First deploy / CORS note
 
-`CLIENT_URL` and `NEXT_PUBLIC_API_URL` reference each other’s `RENDER_EXTERNAL_URL`. If the first deploy shows CORS or API errors, trigger **Manual Deploy** on both services once (or redeploy the Blueprint) so env vars resolve.
+If login/API calls fail with CORS errors, confirm **`CLIENT_URL`** on `lms-api` exactly matches your `lms-web` URL (including `https://`, no trailing slash), then redeploy the API.
 
 ## Environment variables
 
@@ -58,7 +61,7 @@ node dist/seed.js
 |----------|---------|--------|
 | `MONGODB_URI` | lms-api | You (Blueprint prompt) |
 | `JWT_SECRET` | lms-api | Auto-generated |
-| `CLIENT_URL` | lms-api | From `lms-web` URL |
+| `CLIENT_URL` | lms-api | You (frontend URL for CORS) |
 | `NEXT_PUBLIC_API_URL` | lms-web (build) | From `lms-api` URL |
 
 ## File uploads
