@@ -35,7 +35,6 @@ Render will:
 - Set `NEXT_PUBLIC_API_URL` on the frontend from the API’s public URL
 - Set `CLIENT_URL` on the API from the frontend’s public URL (CORS)
 - Generate `JWT_SECRET` automatically
-- Run `node dist/seed.js` before each API deploy (creates test users)
 
 ## After deploy
 

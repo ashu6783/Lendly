@@ -103,7 +103,7 @@ flowchart LR
 | Render service | Image | Notes |
 | -------------- | ----- | ----- |
 | `lms-web` | `frontend/Dockerfile` | `output: 'standalone'`; API URL baked in at **build** time |
-| `lms-api` | `backend/Dockerfile` | Listens on `0.0.0.0` + `PORT`; seeds test users on deploy |
+| `lms-api` | `backend/Dockerfile` | Listens on `0.0.0.0` + `PORT`; seed test users manually via Shell |
 
 ### Request & auth flow
 
