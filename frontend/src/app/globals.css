@@ -1,0 +1,77 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+html,
+body {
+  padding: 0;
+  margin: 0;
+}
+
+body {
+  background-color: theme('colors.paper');
+  color: theme('colors.ink.DEFAULT');
+  font-family: theme('fontFamily.sans');
+  -webkit-font-smoothing: antialiased;
+  /* Subtle layered background so it isn't a flat fill. */
+  background-image:
+    radial-gradient(1200px 600px at 100% -10%, rgba(14, 159, 110, 0.06), transparent 60%),
+    radial-gradient(900px 500px at -10% 110%, rgba(13, 27, 42, 0.04), transparent 55%);
+  background-attachment: fixed;
+  min-height: 100vh;
+}
+
+h1,
+h2,
+h3,
+.font-display {
+  font-family: theme('fontFamily.display');
+  letter-spacing: -0.01em;
+}
+
+/* Range slider styling for the loan configuration panel. */
+input[type='range'] {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  border-radius: 9999px;
+  background: theme('colors.edge');
+  outline: none;
+}
+input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 22px;
+  width: 22px;
+  border-radius: 9999px;
+  background: theme('colors.brand.600');
+  border: 3px solid #fff;
+  box-shadow: 0 2px 8px rgba(5, 122, 85, 0.4);
+  cursor: pointer;
+}
+input[type='range']::-moz-range-thumb {
+  height: 18px;
+  width: 18px;
+  border-radius: 9999px;
+  background: theme('colors.brand.600');
+  border: 3px solid #fff;
+  cursor: pointer;
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.animate-fade-up {
+  animation: fade-up 0.4s ease both;
+}
