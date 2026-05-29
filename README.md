@@ -322,26 +322,10 @@ flow); a `Loan` has many `Payment`s.
 ---
 
 ## Loan lifecycle
+---
 
-```
-flowchart LR
-  BRE{BRE pass?}
-  DRAFT[DRAFT]
-  APPLIED[APPLIED]
-  SANCTIONED[SANCTIONED]
-  DISBURSED[DISBURSED]
-  CLOSED[CLOSED]
-  REJECTED[REJECTED]
+<img width="2406" height="338" alt="image" src="https://github.com/user-attachments/assets/bd18bcf0-4a59-4f06-9669-97996d57055e" />
 
-  BRE -->|no| Blocked[No loan / 422]
-  BRE -->|yes| DRAFT
-  DRAFT -->|borrower applies| APPLIED
-  APPLIED -->|sanction approves| SANCTIONED
-  APPLIED -->|sanction rejects| REJECTED
-  SANCTIONED -->|disbursement releases funds| DISBURSED
-  DISBURSED -->|fully repaid| CLOSED
-
-```
 
 | Transition                | Trigger              | Allowed roles            |
 | ------------------------- | -------------------- | ------------------------ |
