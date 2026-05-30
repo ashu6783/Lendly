@@ -322,15 +322,10 @@ flow); a `Loan` has many `Payment`s.
 ---
 
 ## Loan lifecycle
+---
 
-```
-                 BRE fail ──► blocked (no loan created)
-                    ▲
- sign up ──► DRAFT ─┴─► APPLIED ──► SANCTIONED ──► DISBURSED ──► CLOSED
- (borrower)  (borrower)  (borrower)   │              (disburse)   (auto: paid
-                                      └─► REJECTED                 in full)
-                                          (sanction, w/ reason)
-```
+<img width="2406" height="338" alt="image" src="https://github.com/user-attachments/assets/bd18bcf0-4a59-4f06-9669-97996d57055e" />
+
 
 | Transition                | Trigger              | Allowed roles            |
 | ------------------------- | -------------------- | ------------------------ |
