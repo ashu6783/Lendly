@@ -99,7 +99,9 @@ function ApplyFlow() {
   const activeIndex = STEP_LABELS.findIndex((s) => s.key === step);
 
   return (
-    <main className="mx-auto max-w-2xl px-6 py-10">
+    <main
+      className={`mx-auto px-6 py-10 ${step === 'config' ? 'max-w-5xl' : 'max-w-2xl'}`}
+    >
       <h1 className="font-display text-3xl font-bold text-ink">Apply for a loan</h1>
 
       {/* Step indicator */}
@@ -462,21 +464,23 @@ function ConfigStep({ onBack, onDone }: { onBack: () => void; onDone: (l: Loan) 
         </div>
       </Card>
 
-      {/* Live calculation panel */}
-      <Card className="flex flex-col bg-ink p-7 text-white lg:col-span-2">
-        <p className="text-xs uppercase tracking-wide text-white/60">Live repayment</p>
+      {/* Live calculation panel — plain div avoids Card's default bg-surface overriding custom bg */}
+      <div className="flex flex-col rounded-2xl border border-brand-200 bg-brand-50 p-7 shadow-card lg:col-span-2">
+        <p className="text-xs font-semibold uppercase tracking-wide text-brand-800">
+          Live repayment
+        </p>
         <div className="mt-4 space-y-4">
-          <Row label="Principal" value={inr(q.amount)} />
-          <Row label="Interest rate" value="12% p.a." />
-          <Row label="Tenure" value={`${q.tenureDays} days`} />
-          <div className="h-px bg-white/15" />
-          <Row label="Simple interest" value={inr2(q.simpleInterest)} />
+          <SummaryRow label="Principal" value={inr(q.amount)} />
+          <SummaryRow label="Interest rate" value="12% p.a." />
+          <SummaryRow label="Tenure" value={`${q.tenureDays} days`} />
+          <div className="h-px bg-brand-200" />
+          <SummaryRow label="Simple interest" value={inr2(q.simpleInterest)} />
           <div>
-            <p className="text-sm text-white/60">Total repayment</p>
-            <p className="font-display text-3xl font-bold">{inr2(q.totalRepayment)}</p>
+            <p className="text-sm text-ink-muted">Total repayment</p>
+            <p className="font-display text-3xl font-bold text-ink">{inr2(q.totalRepayment)}</p>
           </div>
         </div>
-        <p className="mt-4 text-[11px] leading-relaxed text-white/50">
+        <p className="mt-4 text-[11px] leading-relaxed text-ink-muted">
           SI = (P × R × T) / (365 × 100). Recomputed on the server when you apply.
         </p>
 
@@ -493,16 +497,16 @@ function ConfigStep({ onBack, onDone }: { onBack: () => void; onDone: (l: Loan) 
             Apply
           </Button>
         </div>
-      </Card>
+      </div>
     </div>
   );
 }
 
-function Row({ label, value }: { label: string; value: string }) {
+function SummaryRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-center justify-between">
-      <span className="text-sm text-white/70">{label}</span>
-      <span className="font-medium">{value}</span>
+    <div className="flex items-center justify-between gap-4">
+      <span className="text-sm text-ink-muted">{label}</span>
+      <span className="font-medium text-ink">{value}</span>
     </div>
   );
 }

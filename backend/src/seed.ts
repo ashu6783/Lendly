@@ -2,8 +2,7 @@ import { connectDB, disconnectDB } from './config/db';
 import { User } from './models/User';
 import { Role } from './types';
 
-// One account per role so an evaluator can log in and test each module.
-// Password is shared for convenience; change it for any real deployment.
+// One account per role 
 const SEED_PASSWORD = 'Password123';
 
 const accounts: Array<{ name: string; email: string; role: Role }> = [
